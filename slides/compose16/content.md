@@ -7,34 +7,53 @@ Mindy Preston
 [https://mirage.io](https://mirage.io)
 [https://somerandomidiot.com](https://somerandomidiot.com)
 
+```ocaml
+                        ##         .
+                  ## ## ##        ==
+               ## ## ## ## ##    ===
+           /"""""""""""""""""\___/ ===
+      ~~~ {~~ ~~~~ ~~~ ~~~~ ~~~ ~ /  ===- ~~~
+           \\______ o           __/
+             \\    \\         __/
+              \\____\\_______/
+
+```
+[http://docker.io](http://docker.io)
+
 
 ----
 
-> Let's explore some of the opportunities presented by the flexibility and
-hackability of library operating systems! Examples will be given using MirageOS,
-an OCaml library OS framework. 
+# Where To?
 
-+ "Library Operating Systems"
++ Operating Systems From Above
++ "Library Operating System"
 + A Library from a Library Operating System
-+ Composing an Operating System from Libraries
-+ Using Library Operating Systems to Do Sorcery
++ Composing an Operating System
++ Implications of Library Components
 + Rejecting the Default Reality and Substituting Our Own
 + Wilder Realities than So Far Imagined
 
+Note:
+Here's a quick overview of the landscape we're going to survey.  We'll talk a bit about interfacing with operating systems from an application developers' perspective.  We'll discuss what I mean when I say "library operating system".  We'll have a quick look at an example librayr from an OCaml library OS, then a look at how composing such libraries works.  Then we'll explore some interesting possibilities for our application development and debugging presented by library operating systems, exploiting the equivalence of the operating system's libraries and our own.
+
 
 ----
 
-## Deep <strike>Magic</strike> Sufficiently Obfuscated Technology
+## By Way of Contrast
 
 ```
++------------------------+---------------+
+| User-level Application | External Libs |
++------------------------+---------------+
+       API in Your Language
 +----------------------------------------+
-| My Rad Application                     |
+|     Runtime (or not!), shared libs     |
 +----------------------------------------+
-| Application runtime + shared libraries |
+      Sockets, syscalls, & such       
 +----------------------------------------+
-| Web server, database, and friends      |
-+----------------------------------------+
-| Kernel code (probably dragons)         | <--- ???
+| scheduler, memory management, power,   |
+| network, filesystems, clock, entropy,  |
+| keyboard, video, ...                   |
 +----------------------------------------+
 | Hypervisor                             |
 +----------------------------------------+
@@ -43,7 +62,35 @@ an OCaml library OS framework.
 ```
 
 Note:
-Imagine I'm an application developer.  I know a lot about the code that my code calls directly, because I have to work through the logic of what happens when I invoke it.  I probably know a reasonable amount about the database and web server that my code interacts with, potentially through a couple abstraction layers.  But beyond that, we're getting into territory that's difficult to chart.
+Imagine we're application developers.  We have our application, written in our favorite language.  We probably also have some external dependendies, like maybe serialization or statistics libraries, that are also written in our language.  The interface between our software and these dependencies is defined by an API, also in the language we're working in.  It probably fits reasonably nicely into our application and affords us the same kinds of abstractions for dealing with data, errors, and exceptions as we're used to seeing from other code in our language.  If it doesn't, we can either find one that does or write one ourselves.  
+
+Unfortunately, that's likely not all we need to interface with.  We probably also need to do things like communicate with a disk, a network, or maybe even a live human user at a keyboard.  If we don't want to write our own drivers, we need the operating system to do these things for us, which means we need to ask it to perform these tasks via the API it provides.  Our language likely provides us with a nice interface for doing these things as well, but once we look a little closer, it doesn't look so nice at all.
+
+
+----
+
+## Some Socket Functions
+
+A selection from OCaml:
+
+```ocaml
+val socket : socket_domain -> socket_type -> int ->
+             file_descr
+(** create a new socket with
+   a given network layer implementation,
+   transport layer implementation,
+   and (optional) protocol type *)
+
+val connect : file_descr -> sockaddr -> unit
+(** connect a socket to an address; 
+    will throw exceptions for non-socket file_descr
+    or connection errors *)
+```
+
+Note:
+Here's a small selection from the representation of the sockets API in OCaml's Unix module.  While it's in an application-level language, it's really an expression of the sockets API that the underlying operating system provides to us.  
+
+We can build libraries of our own on top of this that attempt to abstract away the non-typeful ugliness here, but at some level we *have* to interact with this.  At best, we might have out-of-band access to more information than the return types defined here.  That `connect` in particular is not very nice, in particular considering that this is a very common failure point in an application.
 
 
 ----
@@ -51,23 +98,25 @@ Imagine I'm an application developer.  I know a lot about the code that my code 
 ## Library Operating System
 
 ```
-+--------------------------------------------------------+
-| My Rad Application                                     |
-+--------------------------------------------------------+
-| Web server, database, & friends                        |
-+------------+---------+----------+--+------------+------+
-| Networking | Storage | Timekeeping | Randomness | .... |
-+------------+---------+-------------+------------+------+
-| Application runtime                                    |
-+--------------------------------------------------------+
-| Hypervisor                                             |
-+--------------------------------------------------------+
-| Silicon bits                                           |
-+--------------------------------------------------------+
++---------------------------------------------------------+
+| User-level Application                                  |
++---------------------------------------------------------+
+                 API in Your Language
++---------------------------------------------------------+
+| Networking | Storage | Timekeeping | Randomness | ....  |
++------------+---------+-------------+------------+-------+
+                 API in Your Language
++---------------------------------------------------------+
+| Application runtime                                     |
++---------------------------------------------------------+
+| Hypervisor                                              |
++---------------------------------------------------------+
+| Silicon bits                                            |
++---------------------------------------------------------+
 ```
 
 Note:
-Now let's imagine that I'm running my code for petfinder.com in a different context.  Instead of using a traditional monolithic kernel like Linux, I've decided to seek out great fortune and use a library operating system instead.  In this model, the things I need from the operating system like networking, storage, timekeeping, and randomness are implemented as libraries in the same language that I wrote backend code in, and they run on the same application runtime as my code!  There are still layers that aren't easy for me to understand, but there are fewer of them.  And more code is runinng in an environment that I already need to know things about!
+Now let's imagine that I'm building running my code for petfinder.com in a different context.  Instead of using a traditional monolithic kernel like Linux, I've decided to seek out great fortune and use a library operating system instead.  In this model, the things I need from the operating system like networking, storage, timekeeping, and randomness are implemented as libraries in the same language that I wrote backend code in, and they run on the same application runtime as my code!  There are still layers that aren't easy for me to understand, but there are fewer of them.  And more code is runinng in an environment that I already need to know things about!
 
 
 ----
@@ -76,8 +125,10 @@ Now let's imagine that I'm running my code for petfinder.com in a different cont
 
 + An interface definiton for common operations
   * "check the time", "get a random number", "send a packet", "write a file"
+  * (MirageOS: module types)
 + Implementations of that interface
   * "interact with a btrfs filesystem", "interact with a HFS+ filesystem"
+  * (MirageOS: modules)
 
 Note:
 So what does these libraries actually look like?  They look pretty much like libraries you might be used to using in other contexts - a definition of some stuff the library does through an abstract interface, and some implementations of that interface.
@@ -111,17 +162,17 @@ Here's a subset of the MirageOS definitions for what you might like to do with a
 ## What's an Implementation Look Like?
 
 ```ocaml
-  let read filesystem path the_start length =
-    let path = Path.of_string path in
-    if_formatted filesystem (fun fs ->
-        find x.device fs path >>= function
-        | `Ok (Dir _) -> return (`Error
-           (`Is_a_directory (Path.to_string path)))
-        | `Ok (File f) ->
-          read_file filesystem.device fs f the_start length >>=
-	  fun buffer -> return (`Ok buffer)
-        | `Error x -> return (`Error x)
-      )
+let read filesystem path the_start length =
+  let path = Path.of_string path in
+  if_formatted filesystem (fun fs ->
+     find x.device fs path >>= function
+     | `Ok (Dir _) -> return (`Error
+        (`Is_a_directory (Path.to_string path)))
+     | `Ok (File f) ->
+       read_file filesystem.device fs f the_start length >>=
+        fun buffer -> return (`Ok buffer)
+     | `Error x -> return (`Error x)
+    )
 ```
 
 Note:
@@ -137,8 +188,8 @@ type output =
   | Unix_process
   | Xen_unikernel
 
-val mirageify : application -> dependencies list ->
-                implementations list -> output
+val compose : application -> dependencies list ->
+              implementations list -> output
 ```
 
 Note:
@@ -173,9 +224,9 @@ let test_marshal_padding () =
   check 4 (Tcp.Options.marshal buf needs_padding);
   check 4 (extract 0);
   check 2 (extract 1);
-  check 0 (extract 2); (* should pad out the rest of the buffer with 0 *)
+  check 0 (extract 2); (* 0 out everything else *)
   check 0 (extract 3);
-  check 255 (extract 4); (* but not keep padding into random memory *)
+  check 255 (extract 4); (* but not into random memory *)
   Lwt.return_unit
 ```
 
@@ -189,16 +240,16 @@ For example, we can write some fairly pedestrian code to test serializing and de
 
 ```
 $ ./test.native test tcp_options|grep -v SKIP
-[OK]        tcp_options  0   unmarshal broken mss.
-[OK]        tcp_options  1   unmarshal option with bogus length.
-[OK]        tcp_options  2   unmarshal option with zero length.
-[OK]        tcp_options  3   unmarshal simple cases.
-[OK]        tcp_options  4   unmarshal stops at eof.
-[OK]        tcp_options  5   unmarshal non-broken tcp options.
-[OK]        tcp_options  6   unmarshalling random data returns.
-[OK]        tcp_options  7   test marshalling an unknown value.
-[OK]        tcp_options  8   test marshalling when padding is needed.
-[OK]        tcp_options  9   test marshalling the empty list.
+[OK]        tcp_options  0   unmarshal broken mss
+[OK]        tcp_options  1   unmarshal option w/bogus length
+[OK]        tcp_options  2   unmarshal option w/zero length
+[OK]        tcp_options  3   unmarshal simple cases
+[OK]        tcp_options  4   unmarshal stops at eof
+[OK]        tcp_options  5   unmarshal tcp options
+[OK]        tcp_options  6   unmarshal random data returns
+[OK]        tcp_options  7   marshal unknown value
+[OK]        tcp_options  8   marshal when padding is needed
+[OK]        tcp_options  9   marshal the empty list
 Test Successful in 0.015s. 10 tests run.
 ```
 
@@ -283,11 +334,11 @@ We could use a featureful library for storing state that gives us some affordanc
 
 ----
 
-## Irmin-NAT
+## Irmin-ARP
 
-+ Normal operation: store a network address translation table in an in-memory Irmin store
++ Normal operation: store a map from IPv4 addresses to MAC addresses in an in-memory Irmin store
 + For live testing: same table, same store, but swap the in-memory backend for on-disk store
-   - now `git log` gives us the entire history of changes to the table!
+   - now `git log` gives us the entire history of changes to the map!
    - Committing to the repository lets us change the data live and see how our code reacts!
 
 
@@ -296,6 +347,7 @@ We could use a featureful library for storing state that gives us some affordanc
 ## Visualizing Control Flow
 
 + What if the scheduler left a log?
++ ["Visualising an Asynchronous Monad"](https://roscidus.com/blog/blog/2014/10/27/visualising-an-asynchronous-monad/), Thomas Leonard
 
 
 ----
@@ -303,13 +355,7 @@ We could use a featureful library for storing state that gives us some affordanc
 ## Your Idea Here?
 
 + Library operating system projects and languages:
-  - Clive (Go)
   - HaLVM (Haskell)
-  - IncludeOS (C++)
   - MirageOS (OCaml)
-  - Rump (C)
   - runtime.js (JavaScript)
   - More at [http://unikernel.org](http://unikernel.org) !
-+ Try out MirageOS:
-  - [https://github.com/mirage/mirage-skeleton](https://github.com/mirage/mirage-skeleton)
-  - [https://github.com/mattgray/devwinter2016](https://github.com/mattgray/devwinter2016)
