@@ -25,7 +25,7 @@ let decks =
       speakers = [People.mindy];
       venue = "Madison DevOps";
       title = "Unikernels & MirageOS";
-      style = Reveal240;
+      style = Reveal262 None;
     };
     { permalink = "ucamafp16";
       given = Date.t (2016, 03, 06);

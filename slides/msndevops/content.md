@@ -71,8 +71,8 @@ Unfortunately, that's likely not all we need to interface with.  We probably als
 
 ## the kernel is privileged
 
-the kernel defines the API it'll answer to
-your language's bindings or runtime have to talk on its terms
++ the kernel defines the API it'll answer to
++ your language's bindings or runtime have to talk on its terms
 
 ```ocaml
 val socket : socket_domain -> socket_type -> int ->
@@ -93,19 +93,20 @@ val connect : file_descr -> sockaddr -> unit
 
 ## the kernel is different
 
-different assumptions, APIs, and invariants
-probably a different language than you're used to
-different update/upgrade & maintenance system than anything else
++ different assumptions, APIs, and invariants
++ probably a different language than you're used to
++ different update/upgrade & maintenance system than anything else
 
 
 ----
 
 ## the kernel wants us to think it's important
 
-support for hardware (ex: drivers)
-support for software (ex: filesystems)
-management of resources
-privilege separation
++ support for hardware (ex: drivers)
++ support for software (ex: filesystems)
++ management of resources
++ privilege separation
+
 
 ----
 
@@ -131,22 +132,26 @@ privilege separation
 +----------------------------------------+
 ```
 
+
 ----
 
-### virtual machines
+## virtual machines
 
-something that looks like an entire computer (and might think it is)... but it isn't
-run >1 "computer" (operating system + other stuff) on only 1 physical machine
-
-### hypervisor
-
-software that provides the illusion of isolation to virtual machines
-generally, you also want it to support hardware and manage resources
++ something that looks like an entire computer (and might think it is)... but it isn't
++ run >1 "computer" (operating system + other stuff) on only 1 physical machine
 
 
 ----
 
-### so what we often really have is:
+## hypervisor
+
++ software that provides the illusion of isolation to virtual machines
++ generally, you also want it to support hardware and manage resources
+
+
+----
+
+## stack revisited
 
 ```
 +------------------------+---------------+
@@ -191,6 +196,7 @@ generally, you also want it to support hardware and manage resources
 +---------------------------------------------------------+
 | Silicon bits                                            |
 +---------------------------------------------------------+
+```
 
 
 ----
@@ -204,8 +210,8 @@ our rad application + libraries that know how to talk to hypervisor (+ runtime)
 
 ## library operating system
 
-"library operating system" is the bunch of libraries that help us write applications that can run without a traditional OS
-(sorry that I don't mean library like "little free library" :( if you want to run an application you use in your library with a library operating system, let's talk!))
+* "library operating system" is the bunch of libraries that help us write applications that can run without a traditional OS
+* if you want to run an application you use in your library with a library operating system, let's talk!
 
 
 ----
@@ -227,14 +233,14 @@ it's a framework for generating unikernels in OCaml
 
 ----
 
-### demo time
+## demo time
 
-what's that URL that's hosting these slides, anyway?
+* what's that URL that's hosting these slides, anyway?
 
 
 ----
 
-### what we built & ran
+## what we built & ran
 
 * an artifact that runs directly on a hypervisor which we specified entirely in the language we wrote the application in
 * if we want to run on a different hypervisor or with different libraries, we need to rebuild it entirely
@@ -243,68 +249,86 @@ what's that URL that's hosting these slides, anyway?
 
 ----
 
-### why I like this
+## operating system is libraries: great
 
-if I don't like how something works, I can rewrite it
-if I don't like an API, I can substitute my own
-if something doesn't work, I'm more equipped to find out why and fix it
-the set of stuff I have to care about patching is way, way smaller
+* if I don't like how something works, I can rewrite it
+* if I don't like an API, I can substitute my own
+* if something doesn't work, I'm more equipped to find out why and fix it
+* the set of stuff I have to care about patching is way, way smaller
 
 
 ----
 
-### what isn't fixed
+## we have libraries of operating system: great
 
-I still have to care about the security of my application & the libraries it uses
-I still have to write applications that do the right thing
-I still need something to run my code on
-sometimes there are bugs :(
-I like a programming language that isn't very popular
+* I can use these libraries in other contexts
+* testing gets way way easier
+
+
+----
+
+## what isn't fixed
+
+* I still have to care about the security of my application & the libraries it uses
+* I still have to write applications that do the right thing
+* I still need something to run my code on
+* sometimes there are bugs :(
+* I like a programming language that isn't very popular
 
 
 ----
 
 ## library operating systems
 
-there are a lot of them, and most aren't in OCaml
-some are better fits for more traditional ways of thinking
++ there are a lot of them, and most aren't in OCaml
++ some are better fits for more traditional ways of thinking about & dealing with applications
 
 
 ----
 
-### arbitrary legacy stuff
+## arbitrary legacy stuff
 
-Rump: NetBSD kernel as a set of userspace libraries
-Rumprun: link your application against these libraries automatically
-OSv: POSIX interfaces to freshly-written userspace library implementations of kernel functionality
++ Rump: NetBSD kernel as a set of userspace libraries
+  + Rumprun: link your application against these libraries automatically
++ OSv: POSIX interfaces to freshly-written userspace library implementations of kernel functionality
 
-### potentially of interest for people who like other programming languages
 
-HaLVM
-IncludeOS
-ClickOS
-... [unikernel.org]
+----
+
+## other language-specific unikernels
+
+* HaLVM (Haskell)
+* IncludeOS (C++)
+* Ling (Erlang)
+* ... [unikernel.org]
 
 
 ----
 
 ### future stuff
 
-solo5, bhyve/xhyve/hyperkit, and the lightweight hypervisor (zOMG MirageOS 3)
-what's the difference between a unikernel running in a lightweight hypervisor & a process running in an OS?
+* solo5, bhyve/xhyve/hyperkit, and the lightweight hypervisor (zOMG MirageOS 3)
+* what's the difference between a unikernel running in a lightweight hypervisor & a process running in an OS?
+
+
+----
 
 ### boundaries and isolation
 
-we trust* hypervisors to provide stronger isolation than traditional operating systems
-a lot of people want massively disaggregated and decentralized infrastructure
++ we trust(*cough*) hypervisors to provide stronger isolation than traditional operating systems
++ a lot of people want massively disaggregated and decentralized infrastructure
 
-* admittedly, for values of "we" and "trust"
+
+----
 
 ## what is a unikernel?
 
-one answer: an attempt to do a better job of aligning systems abstractions to application abstractions
-another answer: an attempt to democratize systems programming
-another answer: a refusal to accept the authority of the monolithic operating system
-another answer: containers are so last year
++ one answer: an attempt to do a better job of aligning systems abstractions to application abstractions
++ another answer: an attempt to democratize systems programming
++ another answer: a refusal to accept the authority of the monolithic operating system
++ another answer: containers are so last year
+
+
+----
 
 ## thanks :)
