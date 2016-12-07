@@ -324,15 +324,16 @@ val compose : application -> dependencies list ->
 
 ----
 
-### future stuff
+## future stuff
 
 * solo5, bhyve/xhyve/hyperkit, and the lightweight hypervisor (zOMG MirageOS 3)
+  - minimize the size of the hypervisor layer too!
 * what's the difference between a unikernel running in a lightweight hypervisor & a process running in an OS?
 
 
 ----
 
-### boundaries and isolation
+## boundaries and isolation
 
 + we trust(*cough*) hypervisors to provide stronger isolation than traditional operating systems
 + a lot of people want massively disaggregated and decentralized infrastructure
@@ -351,3 +352,10 @@ val compose : application -> dependencies list ->
 ----
 
 ## thanks :)
+
++ these slides: https://github.com/yomimono/mirage-decks, mirage-dev branch
++ stuff about mirageOS: https://mirage.io
++ stuff about unikernels: https://unikernel.org
++ me: @mindypreston on twitter , @yomimono on github
+
+----
