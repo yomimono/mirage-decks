@@ -25,16 +25,11 @@
 
 # Where To?
 
-+ Operating Systems From Above
++ non-uni-kernels
 + "Library Operating System"
-+ A Library from a Library Operating System
-+ Composing an Operating System
-+ Implications of Library Components
-+ Rejecting the Default Reality and Substituting Our Own
-+ Wilder Realities than So Far Imagined
-
-Note:
-Here's a quick overview of the landscape we're going to survey.  We'll talk a bit about interfacing with operating systems from an application developers' perspective.  We'll discuss what I mean when I say "library operating system".  We'll have a quick look at an example librayr from an OCaml library OS, then a look at how composing such libraries works.  Then we'll explore some interesting possibilities for our application development and debugging presented by library operating systems, exploiting the equivalence of the operating system's libraries and our own.
++ composing unikernels
++ fun things to do with libraries
++ wilder realities than so far imagined
 
 
 ----
@@ -61,11 +56,6 @@ Here's a quick overview of the landscape we're going to survey.  We'll talk a bi
 +----------------------------------------+
 ```
 
-Note:
-Imagine we're application developers.  We have our application, written in our favorite language.  We probably also have some external dependencies, like maybe serialization or statistics libraries, that are also written in our language.  The interface between our software and these dependencies is defined by an API, also in the language we're working in.  It probably fits reasonably nicely into our application and affords us the same kinds of abstractions for dealing with data, errors, and exceptions as we're used to seeing from other code in our language.  If it doesn't, we can either find one that does or write one ourselves.  
-
-Unfortunately, that's likely not all we need to interface with.  We probably also need to do things like communicate with a disk, a network, or maybe even a live human user at a keyboard.  If we don't want to write our own drivers, we need the operating system to do these things for us, which means we need to ask it to perform these tasks via the API it provides.
-
 
 ----
 
@@ -73,6 +63,11 @@ Unfortunately, that's likely not all we need to interface with.  We probably als
 
 + the kernel defines the API it'll answer to
 + your language's bindings or runtime have to talk on its terms
+
+
+----
+
+## the kernel is privileged
 
 ```ocaml
 val socket : socket_domain -> socket_type -> int ->
@@ -86,6 +81,12 @@ val connect : file_descr -> sockaddr -> unit
 (** connect a socket to an address; 
     will throw exceptions for non-socket file_descr
     or connection errors *)
+```
+
+```c
+int socket(int domain, int type, int protocol);
+int connect(int sockfd, const struct sockaddr *addr,
+              socklen_t addrlen);
 ```
 
 
@@ -203,7 +204,9 @@ val connect : file_descr -> sockaddr -> unit
 
 ## that's what a unikernel is
 
-our rad application + libraries that know how to talk to hypervisor (+ runtime)
++ our rad application
++ libraries that know how to talk to hypervisor
++ (and maybe a runtime)
 
 
 ----
@@ -216,19 +219,35 @@ our rad application + libraries that know how to talk to hypervisor (+ runtime)
 
 ----
 
+## Composing Libraries into an Operating System
+
+```ocaml
+type output =
+  | Unix_process
+  | Xen_unikernel
+  | Virtio_kvm_unikernel
+  | Ukvm_unikernel
+
+val compose : application -> dependencies list ->
+              implementations list -> output
+```
+
+
+----
+
 ## why that's rad
 
-we can write, read, and debug those libraries in a language we're used to, with the abstractions & invariants we're used to
-systems code for everyone :D
++ we can write, read, and debug those libraries in a language we're used to, with the abstractions & invariants we're used to
++ systems code for everyone :D
 
 
 ----
 
 ## some personal experiences
 
-the library operating system project I work with is called MirageOS
-it's a framework for generating unikernels in OCaml
-(OCaml is a programming language I like)
++ the library operating system project I work with is called MirageOS
++ it's a framework for generating unikernels in OCaml
++ (OCaml is a programming language I like)
 
 
 ----
