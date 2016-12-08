@@ -1,6 +1,6 @@
 <!-- .slide: class="title" -->
 
-# Operating Systems: Threat or Menace?
+# Unikernels, MirageOS, Library Operating Systems, You
 
 @mindypreston
 
